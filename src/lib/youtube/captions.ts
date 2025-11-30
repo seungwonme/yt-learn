@@ -1,6 +1,23 @@
 import { Innertube } from "youtubei.js";
 import type { Caption } from "@/types";
 
+// TranscriptSegment 타입 (youtubei.js 내부 타입)
+interface TranscriptSegmentLike {
+  type: string;
+  start_ms: string;
+  end_ms: string;
+  snippet: { toString(): string };
+}
+
+function isTranscriptSegment(segment: unknown): segment is TranscriptSegmentLike {
+  return (
+    typeof segment === "object" &&
+    segment !== null &&
+    "type" in segment &&
+    (segment as TranscriptSegmentLike).type === "TranscriptSegment"
+  );
+}
+
 export interface FetchCaptionsParams {
   videoId: string;
   lang?: string;
@@ -46,12 +63,18 @@ export async function fetchCaptions(
     const segments = transcriptData.transcript.content.body.initial_segments;
 
     // youtubei.js 응답을 learning-yt Caption 타입으로 변환
+    // TranscriptSegment만 필터링 (TranscriptSectionHeader 제외)
     const captions: Caption[] = segments
-      .map((segment: any) => ({
-        text: segment.snippet.text,
-        start: segment.start_ms / 1000, // ms → seconds
-        duration: (segment.end_ms - segment.start_ms) / 1000, // ms → seconds
-      }))
+      .filter(isTranscriptSegment)
+      .map((segment) => {
+        const startMs = parseInt(segment.start_ms, 10);
+        const endMs = parseInt(segment.end_ms, 10);
+        return {
+          text: segment.snippet.toString(),
+          start: startMs / 1000, // ms → seconds
+          duration: (endMs - startMs) / 1000, // ms → seconds
+        };
+      })
       .sort((a, b) => a.start - b.start); // start 시간 기준 오름차순 정렬
 
     console.log(`[fetchCaptions] Successfully fetched ${captions.length} captions for video: ${videoId}`);

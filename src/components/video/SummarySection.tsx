@@ -89,18 +89,6 @@ export function SummarySection({
     );
   }
 
-  // 시간 문자열을 초로 변환
-  const parseTimeToSeconds = (timeStr: string): number => {
-    const parts = timeStr.split(":").map(Number);
-    if (parts.length === 2) {
-      return parts[0] * 60 + parts[1];
-    }
-    if (parts.length === 3) {
-      return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    }
-    return 0;
-  };
-
   return (
     <Card>
       <CardHeader>

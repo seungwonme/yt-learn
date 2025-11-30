@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import YouTube, { YouTubeProps, YouTubePlayer } from "react-youtube";
 
 interface VideoPlayerProps {
@@ -14,7 +13,6 @@ export function VideoPlayer({
   onReady,
   onTimeUpdate,
 }: VideoPlayerProps) {
-  const [player, setPlayer] = useState<YouTubePlayer | null>(null);
 
   const opts: YouTubeProps["opts"] = {
     width: "100%",
@@ -28,7 +26,6 @@ export function VideoPlayer({
 
   const handleReady: YouTubeProps["onReady"] = (event) => {
     const ytPlayer = event.target;
-    setPlayer(ytPlayer);
     onReady?.(ytPlayer);
 
     // 시간 업데이트 추적
