@@ -49,6 +49,12 @@ export default function VideoPage() {
           return;
         }
 
+        console.log('[VideoPage] 자막 데이터 첫 5개:', data.captions.slice(0, 5).map((c, i) => ({
+          index: i,
+          start: c.start,
+          duration: c.duration,
+          text: c.text.substring(0, 30) + '...'
+        })));
         setCaptions(data.captions);
       } catch (error) {
         console.error("Error fetching captions:", error);
@@ -106,8 +112,12 @@ export default function VideoPage() {
 
   // 자막 클릭 시 해당 시간으로 이동
   const handleCaptionClick = (time: number) => {
+    console.log(`[VideoPage] handleCaptionClick 호출 - 이동할 시간: ${time}초`);
     if (player && player.seekTo) {
+      console.log(`[VideoPage] player.seekTo(${time}) 실행`);
       player.seekTo(time, true);
+    } else {
+      console.log('[VideoPage] player가 준비되지 않음');
     }
   };
 

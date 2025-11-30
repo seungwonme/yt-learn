@@ -29,12 +29,14 @@ export async function fetchCaptions(
       lang,
     });
 
-    // offset과 duration은 항상 밀리초 단위
-    const captions: Caption[] = transcriptItems.map((item) => ({
-      text: item.text,
-      start: item.offset / 1000, // ms -> seconds
-      duration: item.duration / 1000, // ms -> seconds
-    }));
+    // @danielxceron/youtube-transcript는 이미 초 단위로 반환
+    const captions: Caption[] = transcriptItems
+      .map((item) => ({
+        text: item.text,
+        start: item.offset, // 이미 seconds 단위
+        duration: item.duration, // 이미 seconds 단위
+      }))
+      .sort((a, b) => a.start - b.start); // start 시간 기준 오름차순 정렬
 
     return {
       captions,
@@ -54,11 +56,13 @@ export async function fetchCaptions(
           }
         );
 
-        const captions: Caption[] = transcriptItems.map((item) => ({
-          text: item.text,
-          start: item.offset / 1000,
-          duration: item.duration / 1000,
-        }));
+        const captions: Caption[] = transcriptItems
+          .map((item) => ({
+            text: item.text,
+            start: item.offset, // 이미 seconds 단위
+            duration: item.duration, // 이미 seconds 단위
+          }))
+          .sort((a, b) => a.start - b.start); // start 시간 기준 오름차순 정렬
 
         return {
           captions,
