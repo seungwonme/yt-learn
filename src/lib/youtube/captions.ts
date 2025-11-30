@@ -1,4 +1,4 @@
-import { YoutubeTranscript } from "@danielxceron/youtube-transcript";
+import { Innertube } from "youtubei.js";
 import type { Caption } from "@/types";
 
 export interface FetchCaptionsParams {
@@ -14,7 +14,7 @@ export interface FetchCaptionsResult {
 
 /**
  * YouTube 영상의 자막을 추출합니다.
- * @danielxceron/youtube-transcript를 사용 (InnerTube API 폴백 지원)
+ * youtubei.js를 사용 (InnerTube API 직접 사용)
  * @param params 자막 추출 파라미터
  * @returns 자막 데이터
  */
@@ -24,19 +24,37 @@ export async function fetchCaptions(
   const { videoId, lang = "ko" } = params;
 
   try {
-    // 자막 추출 (InnerTube API 폴백 기능 내장)
-    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId, {
-      lang,
-    });
+    // Innertube 클라이언트 생성
+    const youtube = await Innertube.create();
 
-    // @danielxceron/youtube-transcript는 이미 초 단위로 반환
-    const captions: Caption[] = transcriptItems
-      .map((item) => ({
-        text: item.text,
-        start: item.offset, // 이미 seconds 단위
-        duration: item.duration, // 이미 seconds 단위
+    // 영상 정보 가져오기
+    const info = await youtube.getInfo(videoId);
+
+    // 자막 데이터 추출
+    const transcriptData = await info.getTranscript();
+
+    // 자막이 없는 경우
+    if (!transcriptData || !transcriptData.transcript?.content?.body?.initial_segments) {
+      console.error(`No transcript available for video: ${videoId}`);
+      return {
+        captions: [],
+        language: lang,
+        available: false,
+      };
+    }
+
+    const segments = transcriptData.transcript.content.body.initial_segments;
+
+    // youtubei.js 응답을 learning-yt Caption 타입으로 변환
+    const captions: Caption[] = segments
+      .map((segment: any) => ({
+        text: segment.snippet.text,
+        start: segment.start_ms / 1000, // ms → seconds
+        duration: (segment.end_ms - segment.start_ms) / 1000, // ms → seconds
       }))
       .sort((a, b) => a.start - b.start); // start 시간 기준 오름차순 정렬
+
+    console.log(`[fetchCaptions] Successfully fetched ${captions.length} captions for video: ${videoId}`);
 
     return {
       captions,
@@ -44,35 +62,7 @@ export async function fetchCaptions(
       available: true,
     };
   } catch (error) {
-    console.error(`Error fetching ${lang} captions:`, error);
-
-    // 폴백: 다른 언어로 시도
-    if (lang === "ko") {
-      try {
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(
-          videoId,
-          {
-            lang: "en",
-          }
-        );
-
-        const captions: Caption[] = transcriptItems
-          .map((item) => ({
-            text: item.text,
-            start: item.offset, // 이미 seconds 단위
-            duration: item.duration, // 이미 seconds 단위
-          }))
-          .sort((a, b) => a.start - b.start); // start 시간 기준 오름차순 정렬
-
-        return {
-          captions,
-          language: "en",
-          available: true,
-        };
-      } catch (enError) {
-        console.error("Error fetching English captions:", enError);
-      }
-    }
+    console.error(`Error fetching captions for video ${videoId}:`, error);
 
     return {
       captions: [],

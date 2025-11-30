@@ -22,6 +22,18 @@ export function CaptionViewer({
   const activeRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
+  // 타임스탬프를 미리 포맷팅하여 메모이제이션 (깜빡임 방지)
+  const formattedCaptions = useMemo(() => {
+    return captions.map((caption) => {
+      const minutes = Math.floor(caption.start / 60);
+      const seconds = Math.floor(caption.start % 60);
+      return {
+        ...caption,
+        formattedTime: `${minutes}:${seconds.toString().padStart(2, '0')}`,
+      };
+    });
+  }, [captions]);
+
   // 현재 재생 중인 자막 찾기
   // 여러 자막이 겹칠 때, 가장 최근에 시작된 자막을 선택
   // useMemo로 메모이제이션하여 불필요한 재계산 방지
@@ -46,12 +58,6 @@ export function CaptionViewer({
       });
     }
   }, [currentCaptionIndex]);
-
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const handleCopyCaptions = async () => {
     const captionsText = captions.map((caption) => caption.text).join('\n');
@@ -91,11 +97,11 @@ export function CaptionViewer({
       <CardContent>
         <ScrollArea className="h-[400px]" ref={scrollAreaRef}>
           <div className="space-y-2">
-            {captions.map((caption, index) => (
+            {formattedCaptions.map((caption, index) => (
               <div
                 key={index}
                 ref={index === currentCaptionIndex ? activeRef : null}
-                className={`p-3 rounded-lg cursor-pointer ${
+                className={`p-3 rounded-lg cursor-pointer transition-colors ${
                   index === currentCaptionIndex
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted hover:bg-muted/80'
@@ -110,7 +116,7 @@ export function CaptionViewer({
                 }}
               >
                 <div className="text-xs font-mono mb-1 opacity-70">
-                  {formatTime(caption.start)}
+                  {caption.formattedTime}
                 </div>
                 <div className="text-sm">{caption.text}</div>
               </div>
